@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  ARDemo
+//  ARKitDemo
 //
 //  Created by zhongzhendong on 2017/9/15.
 //  Copyright © 2017年 zdzhong. All rights reserved.
