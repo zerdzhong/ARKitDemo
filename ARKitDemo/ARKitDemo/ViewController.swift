@@ -2,7 +2,7 @@
 //  ViewController.swift
 //  ARKitDemo
 //
-//  Created by zhongzhendong on 2017/9/15.
+//  Created by zhongzhendong on 2017/9/28.
 //  Copyright © 2017年 zdzhong. All rights reserved.
 //
 
@@ -12,8 +12,6 @@ import ARKit
 
 class ViewController: UIViewController, ARSCNViewDelegate {
 
-    var treeNode: SCNNode?
-    
     @IBOutlet var sceneView: ARSCNView!
     
     override func viewDidLoad() {
@@ -26,34 +24,34 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/Lowpoly_tree_sample.dae")!
-        self.treeNode = scene.rootNode.childNode(withName: "Tree_lp_11", recursively: true)
-        self.treeNode?.position = SCNVector3Make(0, 0, -1)
-        self.treeNode?.scale = SCNVector3Make(0.1, 0.1, 0.1)
+        let scene = SCNScene(named: "art.scnassets/ship.scn")!
         
         // Set the scene to the view
         sceneView.scene = scene
+    
+        let tapGesture = UITapGestureRecognizer(target: self,
+                                                action: #selector(ViewController.handleTap(gestureRecognizer:)))
+        view.addGestureRecognizer(tapGesture)
     }
     
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else {
+    @objc func handleTap(gestureRecognizer: UITapGestureRecognizer) {
+        guard let currentFrame = sceneView.session.currentFrame else {
             return
         }
+        //使用 view 的快照来创建图片平面
+        let imagePlane = SCNPlane(width: sceneView.bounds.width / 6000, height: sceneView.bounds.height / 6000)
+        imagePlane.firstMaterial?.diffuse.contents = sceneView.snapshot()
+        imagePlane.firstMaterial?.lightingModel = .constant
         
-        let results = sceneView.hitTest(touch.location(in: sceneView), types: [ARHitTestResult.ResultType.featurePoint])
+        //创建 plane node 并添加到场景
+        let planeNode = SCNNode(geometry: imagePlane)
+        sceneView.scene.rootNode.addChildNode(planeNode)
         
-        guard let hitFeature = results.last else {
-            return
-        }
-        
-        let hitTransform = SCNMatrix4(hitFeature.worldTransform)
-        let hitPosition = SCNVector3Make(hitTransform.m41, hitTransform.m42, hitTransform.m43)
-        
-        let newTreeNode = treeNode?.copy() as! SCNNode
-        newTreeNode.position = hitPosition
-        sceneView.scene.rootNode.addChildNode(newTreeNode)
+        //将 node 的 transform 设为摄像头前 10cm
+        var translation = matrix_identity_float4x4
+        translation.columns.3.z = -0.1
+        planeNode.simdTransform = matrix_multiply(currentFrame.camera.transform, translation)
     }
-    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
